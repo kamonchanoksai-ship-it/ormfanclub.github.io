@@ -1,223 +1,190 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Captions</title>
-  <style>
-    :root{
-      --bg:#ffffff;
-      --ink:#111;
-      --muted:#666;
-      --card:#efe9f7;
-      --btn:#ffffff;
-      --btn-border:#e2e2e7;
-      --shadow:0 12px 30px rgba(0,0,0,.08);
-      --radius:22px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
-      color:var(--ink);
-      background:var(--bg);
-    }
-    .wrap{max-width:820px;margin:0 auto;padding:22px 18px 40px}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Captions</title>
 
-    h1{
-      margin:6px 0 14px;
-      font-weight:900;
-      letter-spacing:-.4px;
-      font-size:clamp(22px, 5.6vw, 34px);
-    }
+<style>
+:root{
+  --bg:#ffffff;
+  --ink:#111;
+  --muted:#666;
+  --card:#efe9f7;
+  --btn:#ffffff;
+  --btn-border:#e2e2e7;
+  --shadow:0 12px 30px rgba(0,0,0,.08);
+  --radius:22px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
+  color:var(--ink);
+  background:var(--bg);
+}
+.wrap{max-width:820px;margin:0 auto;padding:22px 18px 40px}
 
-    .modes{
-      display:flex;gap:34px;align-items:center;
-      margin:10px 0 16px;
-      color:var(--ink);
-      font-weight:650;
-      font-size:clamp(15px, 4.2vw, 18px);
-      flex-wrap:wrap;
-    }
-    .modes label{display:flex;gap:10px;align-items:center;cursor:pointer}
-    input[type="radio"]{width:18px;height:18px;accent-color:#111}
+h1{
+  margin:6px 0 14px;
+  font-weight:900;
+  letter-spacing:-.4px;
+  font-size:clamp(22px,5.6vw,34px);
+}
 
-    .card{
-      background:var(--card);
-      border:1px solid rgba(0,0,0,.06);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:20px;
-    }
+.modes{
+  display:flex;gap:34px;align-items:center;
+  margin:10px 0 16px;
+  font-weight:650;
+  font-size:clamp(15px,4.2vw,18px);
+  flex-wrap:wrap;
+}
+.modes label{display:flex;gap:10px;align-items:center;cursor:pointer}
+input[type="radio"]{width:18px;height:18px;accent-color:#111}
 
-    .head{
-      display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;
-      margin-bottom:12px;
-    }
-    .brand{
-      display:flex;gap:14px;align-items:baseline;
-      font-weight:900;
-      font-size:clamp(18px, 4.6vw, 26px);
-    }
-    .pill{
-      font-size:clamp(12px, 3.4vw, 16px);
-      font-weight:800;
-      color:var(--muted);
-      padding:2px 10px;
-      border-radius:999px;
-      border:1px solid rgba(0,0,0,.08);
-      background:rgba(255,255,255,.35);
-    }
-    .idline{
-      width:100%;
-      font-weight:850;
-      color:#2c2c2c;
-      margin-top:2px;
-      opacity:.85;
-      font-size:clamp(14px, 3.8vw, 18px);
-    }
+.card{
+  background:var(--card);
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:20px;
+}
 
-    .actions{margin-left:auto;display:flex;gap:12px}
-    .iconbtn{
-      width:48px;height:44px;
-      border-radius:12px;
-      border:1px solid var(--btn-border);
-      background:var(--btn);
-      font-weight:900;
-      font-size:20px;
-      line-height:1;
-      cursor:pointer;
-      box-shadow:0 6px 16px rgba(0,0,0,.06);
-      user-select:none;
-    }
-    .iconbtn:active{transform:scale(.98)}
-    .iconbtn.active{ outline:2px solid rgba(17,17,17,.22); }
+.head{
+  display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.brand{
+  display:flex;gap:14px;align-items:baseline;
+  font-weight:900;
+  font-size:clamp(18px,4.6vw,26px);
+}
+.pill{
+  font-size:clamp(12px,3.4vw,16px);
+  font-weight:800;
+  color:var(--muted);
+  padding:2px 10px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.08);
+  background:rgba(255,255,255,.35);
+}
+.idline{
+  width:100%;
+  font-weight:850;
+  color:#2c2c2c;
+  margin-top:2px;
+  opacity:.85;
+  font-size:clamp(14px,3.8vw,18px);
+}
 
-    .caption{
-      white-space:pre-wrap;
-      font-weight:700;
-      margin:0;
-      padding:8px 0 2px;
-      font-size:clamp(16px, 4.8vw, 24px);
-      line-height:1.4;
-    }
+.actions{margin-left:auto;display:flex;gap:12px}
+.iconbtn{
+  width:48px;height:44px;
+  border-radius:12px;
+  border:1px solid var(--btn-border);
+  background:var(--btn);
+  font-weight:900;
+  font-size:20px;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
+}
+.iconbtn:active{transform:scale(.98)}
+.iconbtn.active{outline:2px solid rgba(17,17,17,.22)}
 
-    .caption-edit{
-      width:100%;
-      min-height:140px;
-      resize:vertical;
-      border:1px solid rgba(0,0,0,.12);
-      border-radius:14px;
-      background:rgba(255,255,255,.55);
-      padding:12px 12px;
-      font-family:inherit;
-      font-weight:700;
-      font-size:clamp(16px, 4.8vw, 24px);
-      line-height:1.4;
-      outline:none;
-      display:none;
-    }
+.caption{
+  white-space:pre-wrap;
+  font-weight:700;
+  margin:0;
+  padding:8px 0 2px;
+  font-size:clamp(16px,4.8vw,24px);
+  line-height:1.4;
+}
 
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:26px;
-      transform:translateX(-50%);
-      background:#111;
-      color:#fff;
-      padding:10px 16px;
-      border-radius:999px;
-      font-weight:800;
-      opacity:0;
-      pointer-events:none;
-      transition:.25s;
-    }
-    .toast.show{opacity:1}
+.caption-edit{
+  width:100%;
+  min-height:140px;
+  resize:vertical;
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:14px;
+  padding:12px;
+  font-family:inherit;
+  font-weight:700;
+  font-size:clamp(16px,4.8vw,24px);
+  line-height:1.4;
+  display:none;
+}
 
-    .hint{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:13px;
-      font-weight:650;
-    }
-    .hint.local{
-      margin-top:8px;
-      font-size:12px;
-      opacity:.9;
-    }
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:26px;
+  transform:translateX(-50%);
+  background:#111;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:800;
+  opacity:0;
+  pointer-events:none;
+  transition:.25s;
+}
+.toast.show{opacity:1}
 
-    @media (max-width:420px){
-      .wrap{padding:18px 14px 34px}
-      .card{padding:16px}
-      .actions{gap:10px}
-      .iconbtn{width:44px;height:42px}
-    }
-
-    /* 📱 Mobile override */
-    @media (max-width:768px){
-      .caption,
-      .caption-edit{
-        font-size:12px !important;
-        line-height:1.55;
-      }
-    }
-    @media (max-width:360px){
-      .caption,
-      .caption-edit{
-        font-size:11px !important;
-      }
-    }
-  </style>
+/* 📱 Mobile smaller font */
+@media (max-width:768px){
+  .caption,
+  .caption-edit{
+    font-size:12px !important;
+    line-height:1.55;
+  }
+}
+@media (max-width:360px){
+  .caption,
+  .caption-edit{
+    font-size:11px !important;
+  }
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>Orm Kornnaphat X Bvlgari</h1>
+<div class="wrap">
+<h1>Orm Kornnaphat X Bvlgari</h1>
 
-    <div class="modes">
-      <label><input type="radio" name="platform" value="ig" checked> Instagram</label>
-      <label><input type="radio" name="platform" value="x"> X (Twitter)</label>
-    </div>
+<div class="modes">
+<label><input type="radio" name="platform" value="ig" checked> Instagram</label>
+<label><input type="radio" name="platform" value="x"> X (Twitter)</label>
+</div>
 
-    <div class="card">
-      <div class="head">
-        <div class="brand">
-          <span id="titleBrand">Orm Kornnaphat</span>
-          <span class="pill" id="pillType">post</span>
-        </div>
+<div class="card">
+<div class="head">
+<div class="brand">
+<span>Orm Kornnaphat</span>
+<span class="pill" id="pillType">post</span>
+</div>
 
-        <div class="actions">
-          <button class="iconbtn" id="btnRand" title="Random">⟳</button>
-          <button class="iconbtn" id="btnEdit" title="Edit">T</button>
-          <button class="iconbtn" id="btnCopy" title="Copy">⧉</button>
-        </div>
+<div class="actions">
+<button class="iconbtn" id="btnRand">⟳</button>
+<button class="iconbtn" id="btnEdit">T</button>
+<button class="iconbtn" id="btnCopy">⧉</button>
+</div>
 
-        <div class="idline" id="idLine">#0001</div>
-      </div>
+<div class="idline" id="idLine">#0001</div>
+</div>
 
-      <pre class="caption" id="captionBox">Loading…</pre>
-      <textarea class="caption-edit" id="captionEdit"></textarea>
+<pre class="caption" id="captionBox">Loading…</pre>
+<textarea class="caption-edit" id="captionEdit"></textarea>
+</div>
+</div>
 
-      <div class="hint">Tip: ⟳ random • T edit/done • ⧉ copy</div>
-      <div class="hint local" id="editHint" style="display:none;">Editing (local only) — this will NOT change Google Sheets.</div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">Copied</div>
+<div class="toast" id="toast">Copied</div>
 
 <script>
-/** Google Sheets CSV URL */
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
 
-/** Google Sheet format:
- * platform,text
- * ig,"caption..."
- * x,"caption..."
- */
-
 let DB = { ig: [], x: [] };
-let unused = { ig: [], x: [] };   // ✅ สุ่มทุกครั้ง แต่ไม่ซ้ำจนหมดชุด
+let unused = { ig: [], x: [] };
 let counter = 1;
-
 let isEditing = false;
 let currentText = "";
 
@@ -229,171 +196,96 @@ const els = {
   btnRand: document.getElementById("btnRand"),
   btnEdit: document.getElementById("btnEdit"),
   btnCopy: document.getElementById("btnCopy"),
-  toast: document.getElementById("toast"),
-  editHint: document.getElementById("editHint"),
+  toast: document.getElementById("toast")
 };
 
 function showToast(msg){
   els.toast.textContent = msg;
   els.toast.classList.add("show");
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=>els.toast.classList.remove("show"), 1200);
+  setTimeout(()=>els.toast.classList.remove("show"),1200);
 }
 
-/** Robust CSV parser (handles commas + quotes) */
+/* 🔥 crypto random */
+function cryptoRandomInt(max){
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  return array[0] % max;
+}
+
 function parseCSV(text){
-  const rows=[]; let row=[]; let cur=""; let inQuotes=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i], n=text[i+1];
-    if(c === '"' && inQuotes && n === '"'){ cur += '"'; i++; continue; }
-    if(c === '"'){ inQuotes = !inQuotes; continue; }
-    if(c === "," && !inQuotes){ row.push(cur); cur=""; continue; }
-    if((c === "\n" || c === "\r") && !inQuotes){
-      if(c === "\r" && n === "\n") i++;
-      row.push(cur); cur="";
-      if(row.some(x => (x||"").trim() !== "")) rows.push(row);
-      row=[];
-      continue;
-    }
-    cur += c;
-  }
-  row.push(cur);
-  if(row.some(x => (x||"").trim() !== "")) rows.push(row);
-  return rows;
+  return text.split("\n").map(r=>r.split(","));
 }
 
 async function loadData(){
-  try{
-    const res = await fetch(SHEET_URL, { cache: "no-store" });
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    const csv = await res.text();
-    const table = parseCSV(csv);
+  const res = await fetch(SHEET_URL,{cache:"no-store"});
+  const csv = await res.text();
+  const table = parseCSV(csv);
 
-    DB = { ig: [], x: [] };
-    unused = { ig: [], x: [] }; // ✅ รีเซ็ตคิวทุกครั้งที่โหลดข้อมูลใหม่
+  DB = { ig: [], x: [] };
+  unused = { ig: [], x: [] };
 
-    for(let i=1;i<table.length;i++){
-      const platform = (table[i][0]||"").trim().toLowerCase();
-      const text = (table[i][1]||"").trim();
-      if(!text) continue;
-      if(platform !== "ig" && platform !== "x") continue;
-      DB[platform].push(text);
+  for(let i=1;i<table.length;i++){
+    const platform = table[i][0]?.trim().toLowerCase();
+    const text = table[i][1]?.trim();
+    if(platform==="ig" || platform==="x"){
+      if(text) DB[platform].push(text);
     }
-
-    if(DB.ig.length === 0 && DB.x.length === 0){
-      els.captionBox.textContent = "No captions found. Check sheet headers: platform,text";
-      return;
-    }
-    generate();
-  }catch(err){
-    els.captionBox.textContent = "Load failed: " + err.message + " (check Publish to web + CSV link)";
   }
+
+  generate();
 }
 
 function getPlatform(){
   return document.querySelector('input[name="platform"]:checked').value;
 }
 
-function updatePill(){
-  const p = getPlatform();
-  els.pillType.textContent = (p === "ig") ? "post" : "tweet";
-}
-
 function nextId(){
-  els.idLine.textContent = `#${String(counter++).padStart(4,"0")}`;
+  els.idLine.textContent = "#" + String(counter++).padStart(4,"0");
 }
 
-function enterEdit(){
-  isEditing = true;
-  els.btnEdit.classList.add("active");
-  els.btnEdit.title = "Done";
-  els.editHint.style.display = "block";
-
-  els.captionEdit.style.display = "block";
-  els.captionBox.style.display = "none";
-
-  els.captionEdit.value = currentText || (els.captionBox.textContent || "");
-  els.captionEdit.focus();
-  els.captionEdit.setSelectionRange(els.captionEdit.value.length, els.captionEdit.value.length);
-  showToast("Edit ON");
-}
-
-function exitEdit(){
-  isEditing = false;
-  els.btnEdit.classList.remove("active");
-  els.btnEdit.title = "Edit";
-  els.editHint.style.display = "none";
-
-  currentText = (els.captionEdit.value || "").trim();
-
-  els.captionBox.style.display = "block";
-  els.captionEdit.style.display = "none";
-  els.captionBox.textContent = currentText || "—";
-  showToast("Saved");
-}
-
-function toggleEdit(){
-  if(isEditing) exitEdit();
-  else enterEdit();
-}
-
-/** ✅ สุ่มทุกครั้ง (random index) แต่ไม่ซ้ำจนหมดชุด */
 function generate(){
-  if(isEditing){
-    showToast("Finish edit first");
-    return;
-  }
+  if(isEditing) return;
 
-  updatePill();
   const p = getPlatform();
-  const pool = DB[p] || [];
+  const pool = DB[p];
 
-  if(pool.length === 0){
-    currentText = "No captions for this platform yet.";
-    els.captionBox.textContent = currentText;
-    nextId();
-    return;
-  }
-
-  // ถ้า unused ว่าง -> เติมใหม่ทั้งชุด
-  if(!unused[p] || unused[p].length === 0){
+  if(!unused[p] || unused[p].length===0){
     unused[p] = [...pool];
   }
 
-  // สุ่ม index จากรายการที่เหลือ แล้วตัดออก (กันซ้ำ)
-  const idx = Math.floor(Math.random() * unused[p].length);
-  currentText = unused[p].splice(idx, 1)[0];
+  const idx = cryptoRandomInt(unused[p].length);
+  currentText = unused[p].splice(idx,1)[0];
 
   els.captionBox.textContent = currentText;
+  els.pillType.textContent = p==="ig" ? "post" : "tweet";
   nextId();
 }
 
-async function copyCaption(){
-  const text = isEditing ? (els.captionEdit.value || "") : (els.captionBox.textContent || "");
-  if(!text.trim()) return;
-  try{
-    await navigator.clipboard.writeText(text);
-    showToast("Copied");
-  }catch{
-    showToast("Copy failed");
+function toggleEdit(){
+  isEditing=!isEditing;
+  if(isEditing){
+    els.captionEdit.style.display="block";
+    els.captionBox.style.display="none";
+    els.captionEdit.value=currentText;
+  }else{
+    currentText=els.captionEdit.value.trim();
+    els.captionBox.textContent=currentText;
+    els.captionEdit.style.display="none";
+    els.captionBox.style.display="block";
   }
 }
 
-els.btnRand.addEventListener("click", generate);
-els.btnEdit.addEventListener("click", toggleEdit);
-els.btnCopy.addEventListener("click", copyCaption);
+async function copyCaption(){
+  await navigator.clipboard.writeText(currentText);
+  showToast("Copied");
+}
+
+els.btnRand.onclick=generate;
+els.btnEdit.onclick=toggleEdit;
+els.btnCopy.onclick=copyCaption;
 
 document.querySelectorAll('input[name="platform"]').forEach(r=>{
-  r.addEventListener("change", ()=>{
-    if(isEditing){ showToast("Finish edit first"); return; }
-    generate();
-  });
-});
-
-els.captionEdit.addEventListener("keydown", (e)=>{
-  if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
-    exitEdit();
-  }
+  r.onchange=generate;
 });
 
 loadData();
