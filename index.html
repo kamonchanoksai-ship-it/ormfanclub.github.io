@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Captions</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --ink:#111;
+      --muted:#666;
+      --card:#efe9f7;
+      --border:#e6e6ea;
+      --btn:#ffffff;
+      --btn-border:#e2e2e7;
+      --shadow:0 12px 30px rgba(0,0,0,.08);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
+      color:var(--ink);
+      background:var(--bg);
+    }
+    .wrap{max-width:820px;margin:0 auto;padding:22px 18px 40px}
+    h1{margin:6px 0 14px;font-size:34px;font-weight:900;letter-spacing:-.4px}
+    .modes{
+      display:flex;gap:34px;align-items:center;
+      margin:10px 0 16px;
+      color:var(--ink);
+      font-weight:650;
+      font-size:18px;
+    }
+    .modes label{display:flex;gap:10px;align-items:center;cursor:pointer}
+    input[type="radio"]{width:18px;height:18px;accent-color:#111}
+
+    .card{
+      background:var(--card);
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+
+    .head{
+      display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .brand{
+      display:flex;gap:14px;align-items:baseline;
+      font-size:26px;font-weight:900;
+    }
+    .pill{
+      font-size:16px;
+      font-weight:800;
+      color:var(--muted);
+      padding:2px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.35);
+    }
+    .idline{
+      width:100%;
+      font-size:18px;
+      font-weight:850;
+      color:#2c2c2c;
+      margin-top:2px;
+      opacity:.85;
+    }
+
+    .actions{margin-left:auto;display:flex;gap:12px}
+    .iconbtn{
+      width:48px;height:44px;
+      border-radius:12px;
+      border:1px solid var(--btn-border);
+      background:var(--btn);
+      font-weight:900;
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+      box-shadow:0 6px 16px rgba(0,0,0,.06);
+      user-select:none;
+    }
+    .iconbtn:active{transform:scale(.98)}
+
+    .caption{
+      white-space:pre-wrap;
+      font-size:24px;
+      line-height:1.35;
+      font-weight:750;
+      margin:0;
+      padding:8px 0 2px;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:26px;
+      transform:translateX(-50%);
+      background:#111;
+      color:#fff;
+      padding:10px 16px;
+      border-radius:999px;
+      font-weight:800;
+      opacity:0;
+      pointer-events:none;
+      transition:.25s;
+    }
+    .toast.show{opacity:1}
+    .hint{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:650;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Orm Kornnaphat X Bvlgari</h1>
+
+    <div class="modes">
+      <label><input type="radio" name="platform" value="ig" checked> Instagram</label>
+      <label><input type="radio" name="platform" value="x"> X (Twitter)</label>
+    </div>
+
+    <div class="card">
+      <div class="head">
+        <div class="brand">
+          <span id="titleBrand">Orm Kornnaphat</span>
+          <span class="pill" id="pillType">post</span>
+        </div>
+
+        <div class="actions">
+          <button class="iconbtn" id="btnRand" title="Random">⟳</button>
+          <button class="iconbtn" id="btnFmt"  title="Format">T</button>
+          <button class="iconbtn" id="btnCopy" title="Copy">⧉</button>
+        </div>
+
+        <div class="idline" id="idLine">#0001</div>
+      </div>
+
+      <pre class="caption" id="captionBox">Loading…</pre>
+
+      <div class="hint">Tip: ⟳ random • T format hashtags • ⧉ copy</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied</div>
+
+<script>
+/** 1) ใส่ลิงก์ CSV ของ Google Sheets ตรงนี้ */
+const SHEET_URL = "const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
+
+/** Google Sheet format:
+ *  platform,text
+ *  ig,"caption..."
+ *  x,"caption..."
+ */
+
+let DB = { ig: [], x: [] };
+let counter = 1;
+let fmtOn = true;
+
+const els = {
+  captionBox: document.getElementById("captionBox"),
+  idLine: document.getElementById("idLine"),
+  pillType: document.getElementById("pillType"),
+  btnRand: document.getElementById("btnRand"),
+  btnFmt: document.getElementById("btnFmt"),
+  btnCopy: document.getElementById("btnCopy"),
+  toast: document.getElementById("toast"),
+};
+
+function showToast(msg){
+  els.toast.textContent = msg;
+  els.toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>els.toast.classList.remove("show"), 1200);
+}
+
+/** CSV parser รองรับ comma และ "..." */
+function parseCSV(text){
+  const rows=[]; let row=[]; let cur=""; let inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+
+    if(c === '"' && inQuotes && n === '"'){ cur += '"'; i++; continue; }
+    if(c === '"'){ inQuotes = !inQuotes; continue; }
+
+    if(c === "," && !inQuotes){ row.push(cur); cur=""; continue; }
+
+    if((c === "\n" || c === "\r") && !inQuotes){
+      if(c === "\r" && n === "\n") i++;
+      row.push(cur); cur="";
+      if(row.some(x => (x||"").trim() !== "")) rows.push(row);
+      row=[];
+      continue;
+    }
+    cur += c;
+  }
+  // last row
+  row.push(cur);
+  if(row.some(x => (x||"").trim() !== "")) rows.push(row);
+  return rows;
+}
+
+async function loadData(){
+  const res = await fetch(SHEET_URL, { cache: "no-store" });
+  const csv = await res.text();
+  const table = parseCSV(csv);
+
+  DB = { ig: [], x: [] };
+
+  // skip header
+  for(let i=1;i<table.length;i++){
+    const platform = (table[i][0]||"").trim().toLowerCase();
+    const text = (table[i][1]||"").trim();
+    if(!text) continue;
+    if(platform !== "ig" && platform !== "x") continue;
+    DB[platform].push(text);
+  }
+
+  if(DB.ig.length === 0 && DB.x.length === 0){
+    els.captionBox.textContent = "No captions found. Please check your Google Sheet and SHEET_URL.";
+    return;
+  }
+  generate();
+}
+
+function getPlatform(){
+  return document.querySelector('input[name="platform"]:checked').value;
+}
+
+function updatePill(){
+  const p = getPlatform();
+  els.pillType.textContent = (p === "ig") ? "post" : "tweet";
+}
+
+function formatHashtags(text){
+  // แยก hashtag ให้อยู่บรรทัดล่างแบบในรูป
+  // ถ้าไม่มี hashtag ก็คืนเหมือนเดิม
+  const t = text.replace(/\r\n/g, "\n").trim();
+  if(!t.includes("#")) return t;
+
+  // split by " #"
+  const parts = t.split(/\s(?=#)/g);
+  if(parts.length <= 1) return t;
+
+  const first = parts.shift().trim();
+  const tags  = parts.join(" ").trim();
+  return `${first}\n${tags}`;
+}
+
+function nextId(){
+  els.idLine.textContent = `#${String(counter++).padStart(4,"0")}`;
+}
+
+function pickRandom(arr){
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generate(){
+  updatePill();
+  const p = getPlatform();
+  const pool = DB[p] || [];
+  if(pool.length === 0){
+    els.captionBox.textContent = "No captions for this platform yet.";
+    nextId();
+    return;
+  }
+
+  const chosen = pickRandom(pool);
+  els.captionBox.textContent = fmtOn ? formatHashtags(chosen) : chosen;
+  nextId();
+}
+
+async function copyCaption(){
+  const text = els.captionBox.textContent || "";
+  if(!text.trim()) return;
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast("Copied");
+  }catch{
+    showToast("Copy failed");
+  }
+}
+
+function toggleFormat(){
+  fmtOn = !fmtOn;
+  generate();
+  showToast(fmtOn ? "Format ON" : "Format OFF");
+}
+
+// events
+els.btnRand.addEventListener("click", generate);
+els.btnFmt.addEventListener("click", toggleFormat);
+els.btnCopy.addEventListener("click", copyCaption);
+
+document.querySelectorAll('input[name="platform"]').forEach(r=>{
+  r.addEventListener("change", ()=>{ generate(); });
+});
+
+loadData();
+</script>
+</body>
+</html>
