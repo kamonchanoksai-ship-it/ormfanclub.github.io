@@ -89,7 +89,6 @@ input[type="radio"]{width:18px;height:18px;accent-color:#111}
   box-shadow:0 6px 16px rgba(0,0,0,.06);
 }
 .iconbtn:active{transform:scale(.98)}
-.iconbtn.active{outline:2px solid rgba(17,17,17,.22)}
 
 .caption{
   white-space:pre-wrap;
@@ -149,32 +148,32 @@ input[type="radio"]{width:18px;height:18px;accent-color:#111}
 
 <body>
 <div class="wrap">
-<h1>Orm Kornnaphat X Bvlgari</h1>
+  <h1>Orm Kornnaphat X Bvlgari</h1>
 
-<div class="modes">
-<label><input type="radio" name="platform" value="ig" checked> Instagram</label>
-<label><input type="radio" name="platform" value="x"> X (Twitter)</label>
-</div>
+  <div class="modes">
+    <label><input type="radio" name="platform" value="ig" checked> Instagram</label>
+    <label><input type="radio" name="platform" value="x"> X (Twitter)</label>
+  </div>
 
-<div class="card">
-<div class="head">
-<div class="brand">
-<span>Orm Kornnaphat</span>
-<span class="pill" id="pillType">post</span>
-</div>
+  <div class="card">
+    <div class="head">
+      <div class="brand">
+        <span>Orm Kornnaphat</span>
+        <span class="pill" id="pillType">post</span>
+      </div>
 
-<div class="actions">
-<button class="iconbtn" id="btnRand">⟳</button>
-<button class="iconbtn" id="btnEdit">T</button>
-<button class="iconbtn" id="btnCopy">⧉</button>
-</div>
+      <div class="actions">
+        <button class="iconbtn" id="btnRand" title="Random">⟳</button>
+        <button class="iconbtn" id="btnEdit" title="Edit">T</button>
+        <button class="iconbtn" id="btnCopy" title="Copy">⧉</button>
+      </div>
 
-<div class="idline" id="idLine">#0001</div>
-</div>
+      <div class="idline" id="idLine">#0001</div>
+    </div>
 
-<pre class="caption" id="captionBox">Loading…</pre>
-<textarea class="caption-edit" id="captionEdit"></textarea>
-</div>
+    <pre class="caption" id="captionBox">Loading…</pre>
+    <textarea class="caption-edit" id="captionEdit"></textarea>
+  </div>
 </div>
 
 <div class="toast" id="toast">Copied</div>
@@ -183,8 +182,9 @@ input[type="radio"]{width:18px;height:18px;accent-color:#111}
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
 
 let DB = { ig: [], x: [] };
-let unused = { ig: [], x: [] };
+let unused = { ig: [], x: [] };     // ✅ สุ่มทุกครั้ง แต่ไม่ซ้ำจนหมดชุด
 let counter = 1;
+
 let isEditing = false;
 let currentText = "";
 
@@ -196,43 +196,86 @@ const els = {
   btnRand: document.getElementById("btnRand"),
   btnEdit: document.getElementById("btnEdit"),
   btnCopy: document.getElementById("btnCopy"),
-  toast: document.getElementById("toast")
+  toast: document.getElementById("toast"),
 };
 
 function showToast(msg){
   els.toast.textContent = msg;
   els.toast.classList.add("show");
-  setTimeout(()=>els.toast.classList.remove("show"),1200);
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>els.toast.classList.remove("show"),1200);
 }
 
-/* 🔥 crypto random */
-function cryptoRandomInt(max){
-  const array = new Uint32Array(1);
-  window.crypto.getRandomValues(array);
-  return array[0] % max;
-}
-
+/** ✅ CSV parser ที่รองรับ comma + quotes */
 function parseCSV(text){
-  return text.split("\n").map(r=>r.split(","));
+  const rows=[]; let row=[]; let cur=""; let inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+
+    if(c === '"' && inQuotes && n === '"'){ cur += '"'; i++; continue; }
+    if(c === '"'){ inQuotes = !inQuotes; continue; }
+
+    if(c === "," && !inQuotes){ row.push(cur); cur=""; continue; }
+
+    if((c === "\n" || c === "\r") && !inQuotes){
+      if(c === "\r" && n === "\n") i++;
+      row.push(cur); cur="";
+      if(row.some(x => (x||"").trim() !== "")) rows.push(row);
+      row=[];
+      continue;
+    }
+    cur += c;
+  }
+  row.push(cur);
+  if(row.some(x => (x||"").trim() !== "")) rows.push(row);
+  return rows;
+}
+
+/** ✅ crypto random แบบไม่ลำเอียง (ไม่ใช้ % ตรง ๆ) */
+function cryptoRandomInt(max){
+  if(max <= 0) return 0;
+  const range = 4294967296; // 2^32
+  const limit = range - (range % max);
+  const arr = new Uint32Array(1);
+  let x;
+  do{
+    crypto.getRandomValues(arr);
+    x = arr[0];
+  }while(x >= limit);
+  return x % max;
 }
 
 async function loadData(){
-  const res = await fetch(SHEET_URL,{cache:"no-store"});
-  const csv = await res.text();
-  const table = parseCSV(csv);
+  try{
+    const res = await fetch(SHEET_URL, { cache:"no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const csv = await res.text();
+    const table = parseCSV(csv);
 
-  DB = { ig: [], x: [] };
-  unused = { ig: [], x: [] };
+    DB = { ig: [], x: [] };
+    unused = { ig: [], x: [] };
 
-  for(let i=1;i<table.length;i++){
-    const platform = table[i][0]?.trim().toLowerCase();
-    const text = table[i][1]?.trim();
-    if(platform==="ig" || platform==="x"){
-      if(text) DB[platform].push(text);
+    // skip header row
+    for(let i=1;i<table.length;i++){
+      const platform = (table[i][0]||"").trim().toLowerCase();
+      const text = (table[i][1]||"").trim();
+      if(!text) continue;
+      if(platform !== "ig" && platform !== "x") continue;
+      DB[platform].push(text);
     }
-  }
 
-  generate();
+    // กันข้อมูลซ้ำในชีต (เผื่อมี duplicate)
+    DB.ig = Array.from(new Set(DB.ig));
+    DB.x  = Array.from(new Set(DB.x));
+
+    if(DB.ig.length === 0 && DB.x.length === 0){
+      els.captionBox.textContent = "No captions found. Check sheet headers: platform,text";
+      return;
+    }
+    generate();
+  }catch(err){
+    els.captionBox.textContent = "Load failed: " + err.message;
+  }
 }
 
 function getPlatform(){
@@ -247,14 +290,22 @@ function generate(){
   if(isEditing) return;
 
   const p = getPlatform();
-  const pool = DB[p];
+  const pool = DB[p] || [];
 
-  if(!unused[p] || unused[p].length===0){
+  if(pool.length === 0){
+    currentText = "No captions for this platform yet.";
+    els.captionBox.textContent = currentText;
+    els.pillType.textContent = p==="ig" ? "post" : "tweet";
+    nextId();
+    return;
+  }
+
+  if(!unused[p] || unused[p].length === 0){
     unused[p] = [...pool];
   }
 
   const idx = cryptoRandomInt(unused[p].length);
-  currentText = unused[p].splice(idx,1)[0];
+  currentText = unused[p].splice(idx, 1)[0];
 
   els.captionBox.textContent = currentText;
   els.pillType.textContent = p==="ig" ? "post" : "tweet";
@@ -262,30 +313,35 @@ function generate(){
 }
 
 function toggleEdit(){
-  isEditing=!isEditing;
+  isEditing = !isEditing;
   if(isEditing){
-    els.captionEdit.style.display="block";
-    els.captionBox.style.display="none";
-    els.captionEdit.value=currentText;
+    els.captionEdit.style.display = "block";
+    els.captionBox.style.display  = "none";
+    els.captionEdit.value = currentText;
+    els.captionEdit.focus();
   }else{
-    currentText=els.captionEdit.value.trim();
-    els.captionBox.textContent=currentText;
-    els.captionEdit.style.display="none";
-    els.captionBox.style.display="block";
+    currentText = (els.captionEdit.value || "").trim();
+    els.captionBox.textContent = currentText || "—";
+    els.captionEdit.style.display = "none";
+    els.captionBox.style.display  = "block";
   }
 }
 
 async function copyCaption(){
-  await navigator.clipboard.writeText(currentText);
-  showToast("Copied");
+  try{
+    await navigator.clipboard.writeText(currentText || "");
+    showToast("Copied");
+  }catch{
+    showToast("Copy failed");
+  }
 }
 
-els.btnRand.onclick=generate;
-els.btnEdit.onclick=toggleEdit;
-els.btnCopy.onclick=copyCaption;
+els.btnRand.addEventListener("click", generate);
+els.btnEdit.addEventListener("click", toggleEdit);
+els.btnCopy.addEventListener("click", copyCaption);
 
 document.querySelectorAll('input[name="platform"]').forEach(r=>{
-  r.onchange=generate;
+  r.addEventListener("change", generate);
 });
 
 loadData();
