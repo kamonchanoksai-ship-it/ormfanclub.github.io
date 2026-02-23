@@ -155,7 +155,7 @@
       .iconbtn{width:44px;height:42px}
     }
 
-    /* 📱 Mobile override: smaller than before */
+    /* 📱 Mobile override */
     @media (max-width:768px){
       .caption,
       .caption-edit{
@@ -217,6 +217,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLN
  */
 
 let DB = { ig: [], x: [] };
+let shuffled = { ig: [], x: [] };   // ✅ ไม่ซ้ำจนหมดชุด
 let counter = 1;
 
 let isEditing = false;
@@ -263,6 +264,16 @@ function parseCSV(text){
   return rows;
 }
 
+/** ✅ shuffle (Fisher–Yates) */
+function shuffleArray(arr){
+  const a = [...arr];
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function loadData(){
   try{
     const res = await fetch(SHEET_URL, { cache: "no-store" });
@@ -271,6 +282,7 @@ async function loadData(){
     const table = parseCSV(csv);
 
     DB = { ig: [], x: [] };
+    shuffled = { ig: [], x: [] }; // ✅ รีเซ็ตคิวสุ่มทุกครั้งที่โหลดข้อมูลใหม่
 
     for(let i=1;i<table.length;i++){
       const platform = (table[i][0]||"").trim().toLowerCase();
@@ -301,10 +313,6 @@ function updatePill(){
 
 function nextId(){
   els.idLine.textContent = `#${String(counter++).padStart(4,"0")}`;
-}
-
-function pickRandom(arr){
-  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function enterEdit(){
@@ -341,6 +349,7 @@ function toggleEdit(){
   else enterEdit();
 }
 
+/** ✅ Random แบบไม่ซ้ำจนหมดชุด */
 function generate(){
   if(isEditing){
     showToast("Finish edit first");
@@ -358,7 +367,13 @@ function generate(){
     return;
   }
 
-  currentText = pickRandom(pool);
+  // ถ้าคิวว่าง -> สับใหม่ทั้งชุด
+  if(!shuffled[p] || shuffled[p].length === 0){
+    shuffled[p] = shuffleArray(pool);
+  }
+
+  // หยิบออกทีละอัน (ไม่ซ้ำจนหมด)
+  currentText = shuffled[p].pop();
   els.captionBox.textContent = currentText;
   nextId();
 }
