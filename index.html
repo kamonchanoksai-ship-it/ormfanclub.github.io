@@ -168,7 +168,7 @@ input[type="radio"]{width:18px;height:18px;accent-color:#111}
         <button class="iconbtn" id="btnCopy" title="Copy">⧉</button>
       </div>
 
-      <div class="idline" id="idLine">#0001</div>
+      <div class="idline" id="idLine">#0000</div>
     </div>
 
     <pre class="caption" id="captionBox">Loading…</pre>
@@ -181,9 +181,9 @@ input[type="radio"]{width:18px;height:18px;accent-color:#111}
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
 
-let DB = { ig: [], x: [] };
-let unused = { ig: [], x: [] };     // ✅ สุ่มทุกครั้ง แต่ไม่ซ้ำจนหมดชุด
-let counter = 1;
+// ✅ DB เก็บเป็น {id,text} เพื่อให้เลขตรงกับ caption ที่สุ่มได้จริง
+let DB = { ig: [], x: [] };          // [{id,text}]
+let unused = { ig: [], x: [] };      // shuffled pool [{id,text}]
 
 let isEditing = false;
 let currentText = "";
@@ -245,6 +245,14 @@ function cryptoRandomInt(max){
   return x % max;
 }
 
+/** ✅ Fisher–Yates shuffle (ใช้ crypto) */
+function shuffleArray(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = cryptoRandomInt(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
 async function loadData(){
   try{
     const res = await fetch(SHEET_URL, { cache:"no-store" });
@@ -255,35 +263,41 @@ async function loadData(){
     DB = { ig: [], x: [] };
     unused = { ig: [], x: [] };
 
+    // ✅ นับเลขแยกแพลตฟอร์ม + กันซ้ำแบบรักษาลำดับ
+    const seq  = { ig: 0, x: 0 };
+    const seen = { ig: new Set(), x: new Set() };
+
     // skip header row
     for(let i=1;i<table.length;i++){
       const platform = (table[i][0]||"").trim().toLowerCase();
       const text = (table[i][1]||"").trim();
       if(!text) continue;
       if(platform !== "ig" && platform !== "x") continue;
-      DB[platform].push(text);
-    }
 
-    // กันข้อมูลซ้ำในชีต (เผื่อมี duplicate)
-    DB.ig = Array.from(new Set(DB.ig));
-    DB.x  = Array.from(new Set(DB.x));
+      // กันซ้ำ (ถ้าซ้ำไม่เพิ่มเลข)
+      if(seen[platform].has(text)) continue;
+      seen[platform].add(text);
+
+      // ✅ id = ลำดับ caption จริงในชีตของแพลตฟอร์มนั้น (หลังตัดซ้ำ)
+      seq[platform] += 1;
+      DB[platform].push({ id: seq[platform], text });
+    }
 
     if(DB.ig.length === 0 && DB.x.length === 0){
       els.captionBox.textContent = "No captions found. Check sheet headers: platform,text";
+      els.idLine.textContent = "#0000";
       return;
     }
+
     generate();
   }catch(err){
     els.captionBox.textContent = "Load failed: " + err.message;
+    els.idLine.textContent = "#0000";
   }
 }
 
 function getPlatform(){
   return document.querySelector('input[name="platform"]:checked').value;
-}
-
-function nextId(){
-  els.idLine.textContent = "#" + String(counter++).padStart(4,"0");
 }
 
 function generate(){
@@ -296,20 +310,23 @@ function generate(){
     currentText = "No captions for this platform yet.";
     els.captionBox.textContent = currentText;
     els.pillType.textContent = p==="ig" ? "post" : "tweet";
-    nextId();
+    els.idLine.textContent = "#0000";
     return;
   }
 
+  // ✅ เติมแล้ว shuffle ทั้งก้อน -> ไม่ซ้ำจนหมดชุด (แยกแพลตฟอร์ม)
   if(!unused[p] || unused[p].length === 0){
     unused[p] = [...pool];
+    shuffleArray(unused[p]);
   }
 
-  const idx = cryptoRandomInt(unused[p].length);
-  currentText = unused[p].splice(idx, 1)[0];
+  // ✅ สุ่มได้ item ไหน ก็ใช้ id ของ item นั้น
+  const item = unused[p].pop();   // {id,text}
+  currentText = item.text;
 
   els.captionBox.textContent = currentText;
   els.pillType.textContent = p==="ig" ? "post" : "tweet";
-  nextId();
+  els.idLine.textContent = "#" + String(item.id).padStart(4,"0");
 }
 
 function toggleEdit(){
@@ -340,6 +357,7 @@ els.btnRand.addEventListener("click", generate);
 els.btnEdit.addEventListener("click", toggleEdit);
 els.btnCopy.addEventListener("click", copyCaption);
 
+// เปลี่ยน platform แล้วสุ่มใหม่ทันที (ชุดเลขและข้อความของใครของมัน)
 document.querySelectorAll('input[name="platform"]').forEach(r=>{
   r.addEventListener("change", generate);
 });
