@@ -93,7 +93,6 @@
     .iconbtn:active{transform:scale(.98)}
     .iconbtn.active{ outline:2px solid rgba(17,17,17,.22); }
 
-    /* Desktop caption */
     .caption{
       white-space:pre-wrap;
       font-weight:700;
@@ -103,7 +102,6 @@
       line-height:1.4;
     }
 
-    /* Edit textarea */
     .caption-edit{
       width:100%;
       min-height:140px;
@@ -217,7 +215,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLN
  */
 
 let DB = { ig: [], x: [] };
-let shuffled = { ig: [], x: [] };   // ✅ ไม่ซ้ำจนหมดชุด
+let unused = { ig: [], x: [] };   // ✅ สุ่มทุกครั้ง แต่ไม่ซ้ำจนหมดชุด
 let counter = 1;
 
 let isEditing = false;
@@ -264,16 +262,6 @@ function parseCSV(text){
   return rows;
 }
 
-/** ✅ shuffle (Fisher–Yates) */
-function shuffleArray(arr){
-  const a = [...arr];
-  for(let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 async function loadData(){
   try{
     const res = await fetch(SHEET_URL, { cache: "no-store" });
@@ -282,7 +270,7 @@ async function loadData(){
     const table = parseCSV(csv);
 
     DB = { ig: [], x: [] };
-    shuffled = { ig: [], x: [] }; // ✅ รีเซ็ตคิวสุ่มทุกครั้งที่โหลดข้อมูลใหม่
+    unused = { ig: [], x: [] }; // ✅ รีเซ็ตคิวทุกครั้งที่โหลดข้อมูลใหม่
 
     for(let i=1;i<table.length;i++){
       const platform = (table[i][0]||"").trim().toLowerCase();
@@ -349,7 +337,7 @@ function toggleEdit(){
   else enterEdit();
 }
 
-/** ✅ Random แบบไม่ซ้ำจนหมดชุด */
+/** ✅ สุ่มทุกครั้ง (random index) แต่ไม่ซ้ำจนหมดชุด */
 function generate(){
   if(isEditing){
     showToast("Finish edit first");
@@ -367,13 +355,15 @@ function generate(){
     return;
   }
 
-  // ถ้าคิวว่าง -> สับใหม่ทั้งชุด
-  if(!shuffled[p] || shuffled[p].length === 0){
-    shuffled[p] = shuffleArray(pool);
+  // ถ้า unused ว่าง -> เติมใหม่ทั้งชุด
+  if(!unused[p] || unused[p].length === 0){
+    unused[p] = [...pool];
   }
 
-  // หยิบออกทีละอัน (ไม่ซ้ำจนหมด)
-  currentText = shuffled[p].pop();
+  // สุ่ม index จากรายการที่เหลือ แล้วตัดออก (กันซ้ำ)
+  const idx = Math.floor(Math.random() * unused[p].length);
+  currentText = unused[p].splice(idx, 1)[0];
+
   els.captionBox.textContent = currentText;
   nextId();
 }
