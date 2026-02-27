@@ -1,211 +1,124 @@
-:root{
-  --bg0:#fbfbf9;
-  --bg1:#f1f1ef;
-  --ink:#0b0b0c;
-  --muted:#8a8a90;
-  --card:#ffffff;
-  --gold:#c6a75e;
-  --btn-border:#e7e7ea;
-  --shadow:0 28px 90px rgba(0,0,0,.09);
-  --radius:26px;
+// ✅ ใส่ลิงก์ CSV จริงของ Google Sheet ตรงนี้
+const SHEET_URL = "PASTE_YOUR_CSV_URL_HERE";
+
+let DB = { ig: [], x: [] };
+let isEdit = false;
+
+const captionBox = document.getElementById("captionBox");
+const pillType = document.getElementById("pillType");
+const toast = document.getElementById("toast");
+
+const btnRand = document.getElementById("btnRand");
+const btnCopy = document.getElementById("btnCopy");
+const btnEdit = document.getElementById("btnEdit");
+
+function showToast(message = "Copied"){
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), 1100);
 }
 
-*{
-  box-sizing:border-box;
+/* Robust CSV parser (รองรับ comma/quote ในข้อความ) */
+function parseCSV(text){
+  const rows = [];
+  let row = [], cur = "", inQuotes = false;
+
+  for(let i=0;i<text.length;i++){
+    const ch = text[i], next = text[i+1];
+
+    if(ch === '"' && inQuotes && next === '"'){ cur += '"'; i++; continue; }
+    if(ch === '"'){ inQuotes = !inQuotes; continue; }
+
+    if(ch === ',' && !inQuotes){ row.push(cur); cur=""; continue; }
+
+    if((ch === '\n' || ch === '\r') && !inQuotes){
+      if(ch === '\r' && next === '\n') i++;
+      row.push(cur);
+      if(row.some(v=>v.trim()!=="")) rows.push(row);
+      row=[]; cur=""; continue;
+    }
+    cur += ch;
+  }
+
+  row.push(cur);
+  if(row.some(v=>v.trim()!=="")) rows.push(row);
+  return rows;
 }
 
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
-  color:var(--ink);
-  background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(198,167,94,.12), transparent 60%),
-    radial-gradient(900px 600px at 110% 30%, rgba(0,0,0,.05), transparent 55%),
-    linear-gradient(180deg,var(--bg0),var(--bg1));
+function normalizePlatform(raw){
+  const p = (raw||"").trim().toLowerCase();
+  if(p==="ig" || p==="instagram") return "ig";
+  if(p==="x" || p==="twitter" || p.includes("twitter")) return "x";
+  return "";
 }
 
-.wrap{
-  max-width:860px;
-  margin:0 auto;
-  padding:22px 18px 52px;
+async function loadData(){
+  if(!SHEET_URL || SHEET_URL.includes("PASTE_YOUR_CSV_URL_HERE")){
+    captionBox.textContent = "Please set SHEET_URL in app.js";
+    return;
+  }
+
+  const res = await fetch(SHEET_URL, { cache:"no-store" });
+  if(!res.ok) throw new Error("Fetch failed");
+
+  const csv = await res.text();
+  const table = parseCSV(csv);
+  const rows = table.slice(1); // skip header
+
+  DB = { ig: [], x: [] };
+
+  rows.forEach(cols=>{
+    const key = normalizePlatform(cols[0]);
+    const text = (cols[1] || "").trim();
+    if(key && text) DB[key].push(text);
+  });
 }
 
-/* HERO */
-.hero{
-  position:relative;
-  border-radius:30px;
-  overflow:hidden;
-  box-shadow:0 30px 100px rgba(0,0,0,.18);
-  margin:8px 0 22px;
-  background:#000;
+function generate(){
+  const p = document.querySelector('input[name="platform"]:checked').value;
+  const arr = DB[p] || [];
+
+  pillType.textContent = (p==="ig") ? "post" : "tweet";
+
+  if(!arr.length){
+    captionBox.textContent = `No captions available for ${p.toUpperCase()}.`;
+    return;
+  }
+
+  const rand = arr[Math.floor(Math.random()*arr.length)];
+  captionBox.textContent = rand;
 }
 
-.hero img{
-  width:100%;
-  height:440px;
-  object-fit:cover;
-  display:block;
-  filter:contrast(1.05) saturate(1.05);
-}
+btnRand.addEventListener("click", async ()=>{
+  try{
+    captionBox.textContent = "Loading...";
+    await loadData();
+    generate();
+  }catch(e){
+    console.error(e);
+    captionBox.textContent = "Error loading captions. Check SHEET_URL + Publish to web (CSV).";
+  }
+});
 
-.hero::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(900px 420px at 18% 72%, rgba(198,167,94,.18), transparent 60%),
-    linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,.18) 55%, rgba(0,0,0,0));
-}
+btnCopy.addEventListener("click", async ()=>{
+  const text = captionBox.textContent.trim();
+  if(!text) return;
+  await navigator.clipboard.writeText(text);
+  showToast("Copied");
+});
 
-.hero-overlay{
-  position:absolute;
-  left:22px;
-  right:22px;
-  bottom:18px;
-  color:#fff;
-}
+btnEdit.addEventListener("click", ()=>{
+  isEdit = !isEdit;
+  captionBox.contentEditable = isEdit ? "true" : "false";
+  captionBox.style.outline = isEdit ? "2px solid #c6a75e" : "none";
+  btnEdit.classList.toggle("active", isEdit);
+  showToast(isEdit ? "Edit mode" : "Locked");
+});
 
-.hero-title{
-  font-size:clamp(24px,6.2vw,40px);
-  font-weight:900;
-  letter-spacing:1.4px;
-  text-transform:uppercase;
-}
-
-.hero-sub{
-  margin-top:6px;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.2em;
-  text-transform:uppercase;
-  opacity:.9;
-}
-
-/* Heading */
-h1{
-  margin:10px 0 6px;
-  font-weight:900;
-  font-size:clamp(22px,4.8vw,30px);
-}
-
-.gold-line{
-  width:72px;
-  height:2px;
-  background:linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--gold) 18%,
-    var(--gold) 82%,
-    transparent 100%
-  );
-  margin:12px 0 22px;
-  border-radius:999px;
-}
-
-/* Modes */
-.modes{
-  display:flex;
-  gap:26px;
-  align-items:center;
-  margin:6px 0 16px;
-  font-weight:700;
-}
-
-.modes label{
-  cursor:pointer;
-}
-
-input[type="radio"]{
-  accent-color:var(--ink);
-}
-
-/* Card */
-.card{
-  background:rgba(255,255,255,.85);
-  border:1px solid rgba(0,0,0,.08);
-  backdrop-filter:blur(10px);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  padding:22px;
-}
-
-.head{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  flex-wrap:wrap;
-  margin-bottom:14px;
-  padding-bottom:12px;
-  border-bottom:1px solid rgba(0,0,0,.08);
-}
-
-.brand{
-  font-weight:900;
-  font-size:18px;
-}
-
-.pill{
-  font-size:12px;
-  font-weight:900;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-left:8px;
-}
-
-.actions{
-  margin-left:auto;
-  display:flex;
-  gap:12px;
-}
-
-.iconbtn{
-  width:46px;
-  height:44px;
-  border-radius:14px;
-  border:1px solid var(--btn-border);
-  background:#fff;
-  font-size:18px;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.iconbtn:hover{
-  border-color:rgba(198,167,94,.85);
-  color:var(--gold);
-  transform:translateY(-1px);
-}
-
-.iconbtn.active{
-  border-color:var(--gold);
-  color:var(--gold);
-  background:rgba(198,167,94,.08);
-  box-shadow:
-    0 0 0 1px rgba(198,167,94,.4),
-    0 12px 30px rgba(198,167,94,.25);
-}
-
-.caption{
-  white-space:pre-wrap;
-  font-weight:600;
-  font-size:16px;
-  line-height:1.6;
-}
-
-.toast{
-  position:fixed;
-  left:50%;
-  bottom:26px;
-  transform:translateX(-50%);
-  background:#111;
-  color:#fff;
-  padding:9px 14px;
-  border-radius:999px;
-  font-weight:800;
-  opacity:0;
-  transition:.25s;
-}
-
-.toast.show{
-  opacity:1;
-}
+// pill เปลี่ยนทันทีเมื่อสลับ platform
+document.querySelectorAll('input[name="platform"]').forEach(r=>{
+  r.addEventListener("change", ()=>{
+    const p = document.querySelector('input[name="platform"]:checked').value;
+    pillType.textContent = (p==="ig") ? "post" : "tweet";
+  });
+});
