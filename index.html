@@ -131,6 +131,7 @@ input[type="radio"]{accent-color:var(--ink)}
 }
 
 .actions{margin-left:auto;display:flex;gap:12px}
+
 .iconbtn{
   width:46px;height:44px;
   border-radius:14px;
@@ -146,11 +147,21 @@ input[type="radio"]{accent-color:var(--ink)}
   transform:translateY(-1px);
 }
 
+/* EDIT MODE ACTIVE */
+.iconbtn.active{
+  border-color:rgba(198,167,94,1);
+  color:#c6a75e;
+  background:rgba(198,167,94,.08);
+  box-shadow:
+    0 0 0 1px rgba(198,167,94,.4),
+    0 12px 30px rgba(198,167,94,.25);
+}
+
 .caption{
   white-space:pre-wrap;
-  font-weight:750;
-  font-size:18px;
-  line-height:1.55;
+  font-weight:600;
+  font-size:16px;
+  line-height:1.6;
 }
 
 .toast{
@@ -194,10 +205,13 @@ input[type="radio"]{accent-color:var(--ink)}
       <div class="brand">Orm Kornnaphat <span class="pill" id="pillType">post</span></div>
       <div class="actions">
         <button class="iconbtn" id="btnRand">⟳</button>
+        <button class="iconbtn" id="btnEdit">T</button>
         <button class="iconbtn" id="btnCopy">⧉</button>
       </div>
     </div>
-    <div class="caption" id="captionBox">Press ⟳ to load captions</div>
+    <div class="caption" id="captionBox" contenteditable="false">
+      Press ⟳ to load captions
+    </div>
   </div>
 
 </div>
@@ -209,10 +223,12 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLN
 
 let DB = { ig: [], x: [] };
 let currentText = "";
+let isEdit = false;
 
 const captionBox = document.getElementById("captionBox");
 const pillType = document.getElementById("pillType");
 const toast = document.getElementById("toast");
+const editBtn = document.getElementById("btnEdit");
 
 function showToast(){
   toast.classList.add("show");
@@ -229,7 +245,7 @@ async function loadData(){
   rows.forEach(r=>{
     const [platform,text] = r.split(",");
     if(platform && text){
-      DB[platform.trim().toLowerCase()].push(text.trim());
+      DB[platform.trim().toLowerCase()]?.push(text.trim());
     }
   });
 }
@@ -254,9 +270,16 @@ document.getElementById("btnRand").addEventListener("click", async ()=>{
 });
 
 document.getElementById("btnCopy").addEventListener("click", async ()=>{
-  if(!currentText) return;
-  await navigator.clipboard.writeText(currentText);
+  if(!captionBox.textContent.trim()) return;
+  await navigator.clipboard.writeText(captionBox.textContent);
   showToast();
+});
+
+editBtn.addEventListener("click", ()=>{
+  isEdit = !isEdit;
+  captionBox.contentEditable = isEdit;
+  captionBox.style.outline = isEdit ? "2px solid #c6a75e" : "none";
+  editBtn.classList.toggle("active", isEdit);
 });
 </script>
 
