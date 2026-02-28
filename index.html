@@ -38,7 +38,7 @@ body{
   overflow:hidden;
   box-shadow:0 30px 100px rgba(0,0,0,.18);
   margin:8px 0 22px;
-  background:#000;
+  background:linear-gradient(135deg,#0b0b0c,#2b2b2f);
 }
 .hero img{
   width:100%;
@@ -71,6 +71,7 @@ body{
   font-weight:800;
   letter-spacing:.2em;
   text-transform:uppercase;
+  opacity:.95;
 }
 
 /* Heading */
@@ -170,6 +171,13 @@ input[type="radio"]{accent-color:var(--ink)}
   pointer-events:none;
 }
 .toast.show{opacity:1}
+
+/* small helper note */
+.note{
+  margin-top:10px;
+  font-size:12px;
+  opacity:.85;
+}
 </style>
 </head>
 
@@ -177,12 +185,14 @@ input[type="radio"]{accent-color:var(--ink)}
 <div class="wrap">
 
   <section class="hero">
-    <!-- ✅ สำคัญ: วางรูปที่ assets/orm-hero.jpg -->
-    <img src="./assets/orm-hero.jpg" alt="Orm Kornnaphat"
-         onerror="this.style.display='none'; document.querySelector('.hero').style.background='linear-gradient(135deg,#0b0b0c,#2b2b2f)';">
+    <!-- ✅ กันพลาด: จะลองหาไฟล์หลาย path อัตโนมัติใน JS -->
+    <img id="heroImg" src="./assets/orm-hero.jpg" alt="Orm Kornnaphat">
     <div class="hero-overlay">
       <div class="hero-title">Orm Kornnaphat</div>
       <div class="hero-sub">BVLGARI • CAPTION GENERATOR</div>
+      <div class="note" id="heroNote" style="display:none">
+        Image not found — put <b>orm-hero.jpg</b> in <b>/assets</b> (main branch).
+      </div>
     </div>
   </section>
 
@@ -213,8 +223,52 @@ input[type="radio"]{accent-color:var(--ink)}
 <div class="toast" id="toast">Copied</div>
 
 <script>
+/* =========================
+   CONFIG
+========================= */
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
 
+/* =========================
+   HERO IMAGE FIX (GitHub Pages safe)
+========================= */
+(function heroFix(){
+  const img = document.getElementById("heroImg");
+  const note = document.getElementById("heroNote");
+  if(!img) return;
+
+  // ลองหลายตำแหน่ง เผื่อคุณวางรูปไว้คนละที่
+  const candidates = [
+    "./assets/orm-hero.jpg", // ✅ แนะนำ
+    "./assets/Orm-hero.jpg",
+    "./assets/ORM-HERO.jpg",
+    "./orm-hero.jpg",
+    "assets/orm-hero.jpg",
+    "orm-hero.jpg"
+  ];
+
+  let idx = 0;
+  const bust = () => "?v=" + Date.now();
+
+  function tryNext(){
+    idx++;
+    if(idx < candidates.length){
+      img.src = candidates[idx] + bust();
+      return;
+    }
+    // ไม่เจอจริง: ซ่อนรูป + โชว์ note
+    img.style.display = "none";
+    if(note) note.style.display = "block";
+  }
+
+  img.onerror = tryNext;
+
+  // เริ่มจากตัวแรกแบบกัน cache
+  img.src = candidates[0] + bust();
+})();
+
+/* =========================
+   APP
+========================= */
 let DB = { ig: [], x: [] };
 let isEdit = false;
 
@@ -264,7 +318,7 @@ function normalizePlatform(raw){
 }
 
 async function loadData(){
-  // ปิดปุ่มระหว่างโหลด กันกดรัว
+  // กันกดรัวระหว่างโหลด
   randBtn.disabled = true;
   randBtn.style.opacity = .6;
   randBtn.style.cursor = "not-allowed";
@@ -272,23 +326,26 @@ async function loadData(){
   try{
     const res = await fetch(SHEET_URL + "&_=" + Date.now(), { cache:"no-store" });
     if(!res.ok) throw new Error("HTTP " + res.status);
-    const csv = await res.text();
 
+    const csv = await res.text();
     const table = parseCSV(csv);
     const rows = table.slice(1);
 
     DB = { ig:[], x:[] };
 
     rows.forEach(cols=>{
-      const key = normalizePlatform(cols[0]);   // คอลัมน์ A = platform
-      const text = (cols[1]||"").trim();        // คอลัมน์ B = caption
+      // ✅ สมมติชีต: Column A = platform, Column B = caption
+      const key = normalizePlatform(cols[0]);
+      const text = (cols[1]||"").trim();
       if(key && text) DB[key].push(text);
     });
 
     return true;
   }catch(err){
     captionBox.textContent =
-      "Load failed. Check: Sheet Publish to web + CSV link.\n\n" +
+      "Load failed. Check:\n" +
+      "1) Google Sheet -> Publish to web\n" +
+      "2) Column A: ig/x, Column B: caption text\n\n" +
       "Error: " + (err && err.message ? err.message : String(err));
     showToast("Load failed");
     return false;
@@ -302,35 +359,34 @@ async function loadData(){
 function generate(){
   const p = document.querySelector('input[name="platform"]:checked').value;
   const arr = DB[p] || [];
+  pillType.textContent = p==="ig" ? "post" : "tweet";
+
   if(arr.length === 0){
     captionBox.textContent =
       "No captions available.\n\n" +
       "Make sure your Google Sheet has:\n" +
       "- Column A: ig / x\n" +
       "- Column B: caption text";
-    pillType.textContent = p==="ig" ? "post" : "tweet";
     return;
   }
   const rand = arr[Math.floor(Math.random() * arr.length)];
   captionBox.textContent = rand;
-  pillType.textContent = p==="ig" ? "post" : "tweet";
 }
 
-document.getElementById("btnRand").addEventListener("click", async ()=>{
+/* Events */
+randBtn.addEventListener("click", async ()=>{
   captionBox.textContent = "Loading...";
   const ok = await loadData();
   if(ok) generate();
 });
 
-document.getElementById("btnCopy").addEventListener("click", async ()=>{
+copyBtn.addEventListener("click", async ()=>{
   const text = captionBox.textContent.trim();
   if(!text) return;
-
   try{
     await navigator.clipboard.writeText(text);
     showToast("Copied");
   }catch(e){
-    // iOS บางครั้ง block clipboard ถ้าไม่ใช่ user gesture แท้ ๆ
     showToast("Copy blocked");
   }
 });
@@ -342,7 +398,6 @@ editBtn.addEventListener("click", ()=>{
   editBtn.classList.toggle("active", isEdit);
 });
 
-/* ถ้าเปลี่ยน platform ให้ปรับ pill ทันที */
 document.querySelectorAll('input[name="platform"]').forEach(r=>{
   r.addEventListener("change", ()=>{
     const p = document.querySelector('input[name="platform"]:checked').value;
