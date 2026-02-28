@@ -167,6 +167,7 @@ input[type="radio"]{accent-color:var(--ink)}
   font-weight:800;
   opacity:0;
   transition:.25s;
+  pointer-events:none;
 }
 .toast.show{opacity:1}
 </style>
@@ -176,7 +177,9 @@ input[type="radio"]{accent-color:var(--ink)}
 <div class="wrap">
 
   <section class="hero">
-    <img src="orm-hero.jpg" alt="Orm Kornnaphat">
+    <!-- ✅ สำคัญ: วางรูปที่ assets/orm-hero.jpg -->
+    <img src="./assets/orm-hero.jpg" alt="Orm Kornnaphat"
+         onerror="this.style.display='none'; document.querySelector('.hero').style.background='linear-gradient(135deg,#0b0b0c,#2b2b2f)';">
     <div class="hero-overlay">
       <div class="hero-title">Orm Kornnaphat</div>
       <div class="hero-sub">BVLGARI • CAPTION GENERATOR</div>
@@ -195,9 +198,9 @@ input[type="radio"]{accent-color:var(--ink)}
     <div class="head">
       <div class="brand">Orm Kornnaphat <span class="pill" id="pillType">post</span></div>
       <div class="actions">
-        <button class="iconbtn" id="btnRand">⟳</button>
-        <button class="iconbtn" id="btnEdit">T</button>
-        <button class="iconbtn" id="btnCopy">⧉</button>
+        <button class="iconbtn" id="btnRand" title="Random">⟳</button>
+        <button class="iconbtn" id="btnEdit" title="Edit">T</button>
+        <button class="iconbtn" id="btnCopy" title="Copy">⧉</button>
       </div>
     </div>
     <div class="caption" id="captionBox" contenteditable="false">
@@ -213,15 +216,17 @@ input[type="radio"]{accent-color:var(--ink)}
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdPtHYl8KRLNJOXKZ9gC5RPQoF5aHWlwfSHG90HbYRrZPsi2LLv3J2u_WJ8g5f7n16zZPORBaMNqqq/pub?output=csv";
 
 let DB = { ig: [], x: [] };
-let currentText = "";
 let isEdit = false;
 
 const captionBox = document.getElementById("captionBox");
 const pillType = document.getElementById("pillType");
 const toast = document.getElementById("toast");
 const editBtn = document.getElementById("btnEdit");
+const randBtn = document.getElementById("btnRand");
+const copyBtn = document.getElementById("btnCopy");
 
-function showToast(){
+function showToast(msg="Copied"){
+  toast.textContent = msg;
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"),1000);
 }
@@ -259,50 +264,90 @@ function normalizePlatform(raw){
 }
 
 async function loadData(){
-  const res = await fetch(SHEET_URL,{cache:"no-store"});
-  const csv = await res.text();
-  const table = parseCSV(csv);
-  const rows = table.slice(1);
+  // ปิดปุ่มระหว่างโหลด กันกดรัว
+  randBtn.disabled = true;
+  randBtn.style.opacity = .6;
+  randBtn.style.cursor = "not-allowed";
 
-  DB={ig:[],x:[]};
+  try{
+    const res = await fetch(SHEET_URL + "&_=" + Date.now(), { cache:"no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const csv = await res.text();
 
-  rows.forEach(cols=>{
-    const key = normalizePlatform(cols[0]);
-    const text = (cols[1]||"").trim();
-    if(key && text) DB[key].push(text);
-  });
+    const table = parseCSV(csv);
+    const rows = table.slice(1);
+
+    DB = { ig:[], x:[] };
+
+    rows.forEach(cols=>{
+      const key = normalizePlatform(cols[0]);   // คอลัมน์ A = platform
+      const text = (cols[1]||"").trim();        // คอลัมน์ B = caption
+      if(key && text) DB[key].push(text);
+    });
+
+    return true;
+  }catch(err){
+    captionBox.textContent =
+      "Load failed. Check: Sheet Publish to web + CSV link.\n\n" +
+      "Error: " + (err && err.message ? err.message : String(err));
+    showToast("Load failed");
+    return false;
+  }finally{
+    randBtn.disabled = false;
+    randBtn.style.opacity = 1;
+    randBtn.style.cursor = "pointer";
+  }
 }
 
 function generate(){
-  const p=document.querySelector('input[name="platform"]:checked').value;
-  const arr=DB[p]||[];
-  if(arr.length===0){
-    captionBox.textContent="No captions available.";
+  const p = document.querySelector('input[name="platform"]:checked').value;
+  const arr = DB[p] || [];
+  if(arr.length === 0){
+    captionBox.textContent =
+      "No captions available.\n\n" +
+      "Make sure your Google Sheet has:\n" +
+      "- Column A: ig / x\n" +
+      "- Column B: caption text";
+    pillType.textContent = p==="ig" ? "post" : "tweet";
     return;
   }
-  const rand=arr[Math.floor(Math.random()*arr.length)];
-  currentText=rand;
-  captionBox.textContent=rand;
-  pillType.textContent=p==="ig"?"post":"tweet";
+  const rand = arr[Math.floor(Math.random() * arr.length)];
+  captionBox.textContent = rand;
+  pillType.textContent = p==="ig" ? "post" : "tweet";
 }
 
-document.getElementById("btnRand").addEventListener("click",async()=>{
-  captionBox.textContent="Loading...";
-  await loadData();
-  generate();
+document.getElementById("btnRand").addEventListener("click", async ()=>{
+  captionBox.textContent = "Loading...";
+  const ok = await loadData();
+  if(ok) generate();
 });
 
-document.getElementById("btnCopy").addEventListener("click",async()=>{
-  if(!captionBox.textContent.trim())return;
-  await navigator.clipboard.writeText(captionBox.textContent);
-  showToast();
+document.getElementById("btnCopy").addEventListener("click", async ()=>{
+  const text = captionBox.textContent.trim();
+  if(!text) return;
+
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast("Copied");
+  }catch(e){
+    // iOS บางครั้ง block clipboard ถ้าไม่ใช่ user gesture แท้ ๆ
+    showToast("Copy blocked");
+  }
 });
 
-editBtn.addEventListener("click",()=>{
-  isEdit=!isEdit;
-  captionBox.contentEditable=isEdit;
-  captionBox.style.outline=isEdit?"2px solid #c6a75e":"none";
-  editBtn.classList.toggle("active",isEdit);
+editBtn.addEventListener("click", ()=>{
+  isEdit = !isEdit;
+  captionBox.contentEditable = isEdit;
+  captionBox.style.outline = isEdit ? "2px solid #c6a75e" : "none";
+  editBtn.classList.toggle("active", isEdit);
+});
+
+/* ถ้าเปลี่ยน platform ให้ปรับ pill ทันที */
+document.querySelectorAll('input[name="platform"]').forEach(r=>{
+  r.addEventListener("change", ()=>{
+    const p = document.querySelector('input[name="platform"]:checked').value;
+    pillType.textContent = p==="ig" ? "post" : "tweet";
+  });
 });
 </script>
 
